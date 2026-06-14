@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clay — Live configurator · construction_tank_sys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bone:#f5f0eb; --paper:#efe7dd; --ink:#2a2018; --muted:#6b5d4f;
+    --terra:#b85c38; --terra-hover:#a04e2e; --warm-dark:#1a1512;
+    --border:rgba(42,32,24,0.14); --grid:rgba(42,32,24,0.06);
+    --radius:0.75rem; --btn-text:#f8f3ee;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:var(--bone); color:var(--ink);
+    font-family:"Outfit",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5;
+    display:flex; align-items:center; justify-content:center;
+    padding:32px 20px; min-height:100%;
+  }
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace; text-transform:uppercase; letter-spacing:0.08em; font-size:11px;}
+  .wrap{width:100%; max-width:1120px;}
+  .eyebrow{display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:18px;}
+  .eyebrow .dot{width:8px;height:8px;background:var(--terra);}
+  h1{font-weight:700; letter-spacing:-0.03em; font-size:clamp(30px,5vw,52px); text-align:center; margin:0 0 10px;}
+  h1 .accent{color:var(--terra);}
+  .sub{max-width:640px; margin:0 auto 28px; text-align:center; color:var(--muted); font-size:17px;}
+
+  /* instrument readout card */
+  .card{
+    border:1px solid var(--border); border-radius:var(--radius);
+    background:
+      linear-gradient(var(--grid) 1px,transparent 1px) 0 0/26px 26px,
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/26px 26px,
+      var(--paper);
+    padding:18px;
+  }
+  .card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .card-head .rt{color:rgba(184,92,56,0.75);}
+  .grid{display:grid; gap:20px; grid-template-columns:1fr;}
+  @media(min-width:840px){ .grid{grid-template-columns:1.4fr 1fr;} }
+
+  .stage{
+    position:relative; aspect-ratio:4/3; border:1px solid var(--border);
+    border-radius:var(--radius); overflow:hidden; background:var(--warm-dark);
+  }
+  .stage canvas{display:block; width:100%; height:100%;}
+  .badge{
+    position:absolute; left:12px; top:12px; padding:3px 10px; border-radius:999px;
+    background:rgba(245,240,235,0.78); color:var(--muted); font-size:12px; backdrop-filter:blur(4px);
+  }
+
+  .panel{
+    border:1px solid var(--border); border-radius:var(--radius);
+    background:rgba(239,231,221,0.5); padding:20px; display:flex; flex-direction:column; gap:18px;
+  }
+  .panel h3{margin:0; font-size:14px; font-weight:600;}
+  .panel .lead{margin:6px 0 0; font-size:12px; color:var(--muted);}
+  .ctrl{display:flex; flex-direction:column; gap:6px;}
+  .ctrl .row{display:flex; justify-content:space-between; font-size:14px;}
+  .ctrl .row .name{font-weight:500;}
+  .ctrl .row .val{color:var(--muted);}
+  .ctrl.dim{opacity:0.4;}
+  input[type=range]{width:100%; accent-color:var(--terra); cursor:pointer;}
+
+  .switch-row{display:flex; align-items:center; justify-content:space-between; font-size:14px;}
+  .switch{position:relative; width:38px; height:20px; border:none; border-radius:999px; background:var(--border); cursor:pointer; transition:background .15s;}
+  .switch[aria-checked=true]{background:var(--terra);}
+  .switch .knob{position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:999px; background:var(--bone); transition:left .15s;}
+  .switch[aria-checked=true] .knob{left:20px;}
+
+  .finish-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .finish{display:flex; align-items:center; gap:8px; padding:7px 10px; font:inherit; font-size:14px; text-align:left;
+    border:1px solid var(--border); border-radius:8px; background:transparent; cursor:pointer; color:var(--ink);}
+  .finish:hover{background:rgba(42,32,24,0.05);}
+  .finish.active{border-color:var(--terra); background:rgba(184,92,56,0.1);}
+  .finish .sw{width:16px; height:16px; border-radius:999px; border:1px solid rgba(0,0,0,0.2);}
+
+  .cta{margin-top:2px; display:inline-flex; height:40px; align-items:center; justify-content:center;
+    border-radius:8px; background:var(--terra); color:var(--btn-text); font-weight:500; font-size:14px;
+    text-decoration:none; transition:background .15s;}
+  .cta:hover{background:var(--terra-hover);}
+  .foot{margin-top:18px; text-align:center; color:var(--muted);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot"></span><span class="mono">Procedural asset marketplace</span></div>
+    <h1>Start with clay. <span class="accent">Ship a world.</span></h1>
+    <p class="sub">Every control below is a live parameter on the real <strong>construction_tank_sys</strong> Houdini asset. Reshape it, then ship it engine-ready.</p>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="mono">Live configurator / construction_tank_sys</span>
+        <span class="mono rt">Real-time</span>
+      </div>
+      <div class="grid">
+        <div class="stage">
+          <div class="badge">Live demo · drag to orbit</div>
+          <canvas id="view"></canvas>
+        </div>
+        <div class="panel" id="panel"><!-- controls injected --></div>
+      </div>
+    </div>
+
+    <p class="foot mono">Clay by Genesis · Procedural · Customizable · Engine-ready</p>
+  </div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+/* ---- Parameter model (1:1 with the HDA interface) ---- */
+const FINISHES = {
+  concrete:       { label:"Cement",     hex:"#b9b2a6", metalness:0.02, roughness:0.92 },
+  galvanized:     { label:"Galvanized", hex:"#b8bcc2", metalness:0.85, roughness:0.38 },
+  painted:        { label:"Painted",    hex:"#6f7d86", metalness:0.20, roughness:0.62 },
+  weatheredSteel: { label:"Weathered",  hex:"#8a5a3c", metalness:0.40, roughness:0.82 },
+};
+const LIMITS = {
+  overallHeight:{min:5,max:16,step:1}, floors:{min:1,max:12,step:1},
+  sideRails:{min:0,max:4,step:1}, ladderSegs:{min:4,max:24,step:1},
+  ladderTilt:{min:0,max:20,step:1}, weathering:{min:0,max:1,step:0.05},
+};
+const params = {
+  overallHeight:9, hasFloors:true, floors:8, sideRails:1,
+  ladderSegs:10, ladderTilt:8, finish:"concrete", weathering:0.3,
+};
+
+/* ---- Geometry constants (match tank-structure.tsx) ---- */
+const R=1.55, CAP_H=R*0.5, PLATFORM_R=R+0.55, PLATFORM_H=0.06,
+  RAIL_TUBE=0.03, RAIL_HEIGHT=0.5, STRINGER_W=0.05, RUNG_R=0.035,
+  LADDER_WIDTH=0.55, LADDER_X=-(R+0.5), BALUSTERS=14;
+const STEEL={hex:"#9aa0a6",metalness:0.7,roughness:0.5};
+const RUST=new THREE.Color("#4a3526");
+const FOV=42;
+
+/* ---- Scene ---- */
+const canvas=document.getElementById("view");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color("#1a1512");
+const camera=new THREE.PerspectiveCamera(FOV,1.333,0.1,200);
+camera.position.set(13,10.5,15);
+
+const controls=new OrbitControls(camera,canvas);
+controls.enablePan=false; controls.minDistance=8; controls.maxDistance=40;
+controls.maxPolarAngle=Math.PI/2.05; controls.autoRotate=true; controls.autoRotateSpeed=0.6;
+controls.enableDamping=true;
+
+scene.add(new THREE.AmbientLight(0xffffff,0.6));
+const key=new THREE.DirectionalLight(0xffffff,2.2);
+key.position.set(8,18,8); key.castShadow=true;
+key.shadow.mapSize.set(1024,1024);
+const sc=key.shadow.camera; sc.left=-16; sc.right=16; sc.top=24; sc.bottom=-2; sc.near=1; sc.far=60;
+scene.add(key);
+const fill=new THREE.DirectionalLight(0xffffff,0.5); fill.position.set(-10,6,-8); scene.add(fill);
+
+// soft contact shadow on the ground
+const ground=new THREE.Mesh(
+  new THREE.PlaneGeometry(60,60),
+  new THREE.ShadowMaterial({opacity:0.32})
+);
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+/* ---- Shared geometries + materials ---- */
+const geo={
+  body:new THREE.CylinderGeometry(R,R,1,40),
+  cap:new THREE.ConeGeometry(R,CAP_H,40),
+  pad:new THREE.CylinderGeometry(R+0.85,R+0.95,0.18,48),
+  platform:new THREE.CylinderGeometry(PLATFORM_R,PLATFORM_R,PLATFORM_H,48),
+  railRing:new THREE.TorusGeometry(PLATFORM_R,RAIL_TUBE,8,56),
+  baluster:new THREE.CylinderGeometry(0.022,0.022,RAIL_HEIGHT,6),
+  rung:new THREE.CylinderGeometry(RUNG_R,RUNG_R,LADDER_WIDTH,8),
+  stringer:new THREE.BoxGeometry(STRINGER_W,1,STRINGER_W),
+  cage:new THREE.TorusGeometry(0.5,0.022,6,28),
+};
+const tankMat=new THREE.MeshStandardMaterial();
+const steelMat=new THREE.MeshStandardMaterial();
+function applyFinish(mat,spec,w){
+  mat.color.set(spec.hex).lerp(RUST,w*0.55);
+  mat.metalness=spec.metalness*(1-w*0.6);
+  mat.roughness=Math.min(1,spec.roughness+w*0.25);
+}
+
+const tower=new THREE.Group();
+scene.add(tower);
+
+function buildTank(p){
+  const H=p.overallHeight;
+  const floorYs=[];
+  if(p.hasFloors) for(let i=1;i<=p.floors;i++) floorYs.push(H*i/(p.floors+1));
+  const railRings=[];
+  if(p.hasFloors&&p.sideRails>0) for(const y of floorYs)
+    for(let k=1;k<=p.sideRails;k++) railRings.push(y+RAIL_HEIGHT*k/p.sideRails);
+  const balusterYs=(p.hasFloors&&p.sideRails>0)?floorYs:[];
+  const ladderLen=H, top=ladderLen-0.2, bottom=0.4, rungYs=[];
+  for(let i=0;i<p.ladderSegs;i++){
+    const t=p.ladderSegs===1?0.5:i/(p.ladderSegs-1);
+    rungYs.push(bottom+(top-bottom)*t);
+  }
+  const cageCount=Math.min(10,Math.max(2,Math.round(H/1.6))), cageYs=[];
+  for(let i=0;i<cageCount;i++) cageYs.push(1+(ladderLen-1.4)*i/Math.max(1,cageCount-1));
+  return {floorYs,railRings,balusterYs,rungYs,cageYs,ladderLen};
+}
+
+function mesh(g,m,{pos,rot,scale,cast,recv}={}){
+  const o=new THREE.Mesh(g,m);
+  if(pos)o.position.set(...pos);
+  if(rot)o.rotation.set(...rot);
+  if(scale)o.scale.set(...scale);
+  o.castShadow=!!cast; o.receiveShadow=!!recv;
+  return o;
+}
+
+function rebuild(){
+  applyFinish(tankMat,FINISHES[params.finish],params.weathering);
+  applyFinish(steelMat,STEEL,params.weathering);
+  const b=buildTank(params), H=params.overallHeight;
+  tower.clear();
+
+  tower.add(mesh(geo.pad,steelMat,{pos:[0,0.09,0],recv:true}));
+  tower.add(mesh(geo.body,tankMat,{pos:[0,H/2,0],scale:[1,H,1],cast:true,recv:true}));
+  tower.add(mesh(geo.cap,tankMat,{pos:[0,H+CAP_H/2,0],cast:true}));
+
+  for(const y of b.floorYs) tower.add(mesh(geo.platform,steelMat,{pos:[0,y,0],cast:true,recv:true}));
+  for(const y of b.railRings) tower.add(mesh(geo.railRing,steelMat,{pos:[0,y,0],rot:[Math.PI/2,0,0]}));
+  for(const y of b.balusterYs) for(let i=0;i<BALUSTERS;i++){
+    const a=i/BALUSTERS*Math.PI*2;
+    tower.add(mesh(geo.baluster,steelMat,{pos:[Math.cos(a)*PLATFORM_R,y+RAIL_HEIGHT/2,Math.sin(a)*PLATFORM_R]}));
+  }
+
+  const ladder=new THREE.Group();
+  ladder.position.set(LADDER_X,0,0);
+  ladder.rotation.z=params.ladderTilt*Math.PI/180;
+  const halfW=LADDER_WIDTH/2;
+  for(const z of [-halfW,halfW]) ladder.add(mesh(geo.stringer,steelMat,{pos:[0,b.ladderLen/2,z],scale:[1,b.ladderLen,1],cast:true}));
+  for(const y of b.rungYs) ladder.add(mesh(geo.rung,steelMat,{pos:[0,y,0],rot:[Math.PI/2,0,0]}));
+  for(const y of b.cageYs) ladder.add(mesh(geo.cage,steelMat,{pos:[-0.15,y,0],rot:[Math.PI/2,0,0]}));
+  tower.add(ladder);
+}
+
+function fitCamera(){
+  const H=params.overallHeight, centerY=(H+CAP_H)/2;
+  controls.target.set(0,centerY,0);
+  const halfFov=(FOV/2)*Math.PI/180;
+  const dist=((H+CAP_H+4)/(2*Math.tan(halfFov)))*1.1;
+  const dir=new THREE.Vector3().subVectors(camera.position,controls.target);
+  if(dir.lengthSq()===0)dir.set(0.57,0.48,0.67);
+  dir.normalize();
+  camera.position.copy(controls.target).addScaledVector(dir,dist);
+  controls.update();
+}
+
+/* ---- Controls UI ---- */
+const panel=document.getElementById("panel");
+function fmt(key){
+  if(key==="overallHeight")return params.overallHeight+" m";
+  if(key==="floors")return params.floors+" levels";
+  if(key==="sideRails")return params.sideRails===0?"none":params.sideRails+" bands";
+  if(key==="ladderSegs")return String(params.ladderSegs);
+  if(key==="ladderTilt")return params.ladderTilt===0?"vertical":params.ladderTilt+"°";
+  if(key==="weathering")return Math.round(params.weathering*100)+"%";
+}
+function slider(key,label,dimByFloors){
+  const L=LIMITS[key];
+  const wrap=document.createElement("label");
+  wrap.className="ctrl"+(dimByFloors&&!params.hasFloors?" dim":"");
+  wrap.dataset.dim=dimByFloors?"1":"";
+  wrap.innerHTML=`<span class="row"><span class="name">${label}</span><span class="val">${fmt(key)}</span></span>`;
+  const inp=document.createElement("input");
+  inp.type="range"; inp.min=L.min; inp.max=L.max; inp.step=L.step; inp.value=params[key];
+  if(dimByFloors)inp.disabled=!params.hasFloors;
+  inp.addEventListener("input",()=>{
+    params[key]=Number(inp.value);
+    wrap.querySelector(".val").textContent=fmt(key);
+    if(key==="overallHeight")fitCamera();
+    rebuild();
+  });
+  wrap.appendChild(inp);
+  return wrap;
+}
+
+function buildPanel(){
+  panel.innerHTML="";
+  const head=document.createElement("div");
+  head.innerHTML=`<h3>Construction tank system</h3><p class="lead">Every control is a live parameter on the real Houdini asset. Reshape it here, then export it engine-ready — the same manifest drives per-asset customization.</p>`;
+  panel.appendChild(head);
+
+  panel.appendChild(slider("overallHeight","Overall height"));
+
+  // Platforms toggle
+  const sw=document.createElement("div");
+  sw.className="switch-row";
+  sw.innerHTML=`<span class="name" style="font-weight:500">Platforms</span>`;
+  const btn=document.createElement("button");
+  btn.className="switch"; btn.setAttribute("role","switch");
+  btn.setAttribute("aria-checked",String(params.hasFloors));
+  btn.innerHTML=`<span class="knob"></span>`;
+  btn.addEventListener("click",()=>{
+    params.hasFloors=!params.hasFloors;
+    btn.setAttribute("aria-checked",String(params.hasFloors));
+    panel.querySelectorAll('.ctrl[data-dim="1"]').forEach(c=>{
+      c.classList.toggle("dim",!params.hasFloors);
+      const r=c.querySelector("input"); if(r)r.disabled=!params.hasFloors;
+    });
+    rebuild();
+  });
+  sw.appendChild(btn); panel.appendChild(sw);
+
+  panel.appendChild(slider("floors","Floors",true));
+  panel.appendChild(slider("sideRails","Side rails",true));
+  panel.appendChild(slider("ladderSegs","Ladder rungs"));
+  panel.appendChild(slider("ladderTilt","Ladder tilt"));
+  panel.appendChild(slider("weathering","Weathering"));
+
+  // Finish
+  const fin=document.createElement("div");
+  fin.className="ctrl";
+  fin.innerHTML=`<span class="name" style="font-weight:500;font-size:14px">Finish</span>`;
+  const fg=document.createElement("div"); fg.className="finish-grid";
+  for(const key of Object.keys(FINISHES)){
+    const f=FINISHES[key];
+    const b=document.createElement("button");
+    b.className="finish"+(params.finish===key?" active":"");
+    b.innerHTML=`<span class="sw" style="background:${f.hex}"></span>${f.label}`;
+    b.addEventListener("click",()=>{
+      params.finish=key;
+      fg.querySelectorAll(".finish").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      rebuild();
+    });
+    fg.appendChild(b);
+  }
+  fin.appendChild(fg); panel.appendChild(fin);
+}
+
+/* ---- Resize + loop ---- */
+function resize(){
+  const w=canvas.clientWidth, h=canvas.clientHeight;
+  if(w===0||h===0)return;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+}
+window.addEventListener("resize",resize);
+
+buildPanel();
+rebuild();
+resize();
+fitCamera();
+(function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); })();
+</script>
+</body>
+</html>

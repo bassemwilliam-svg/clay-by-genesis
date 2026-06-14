@@ -1,0 +1,686 @@
+// Genesis Forge — database schema.
+//
+// Design choices (see the architecture reference for rationale):
+// - Table-per-type for category metadata: a shared Product + a discriminator +
+//   one optional 1:1 detail table per category. Typed columns give indexed
+//   filtering and end-to-end type safety (vs JSONB/EAV).
+// - Entitlement is the single source of truth for ownership.
+// - Money is always integer minor units (cents) + currency.
+// - Courses ARE products (one publishing pipeline); bundles fan out entitlements.
+// - OrderItem/Invoice freeze snapshots so historical records never drift.
+// - pgvector `embedding` powers concierge semantic search; tsvector powers FTS.
+//   Their indexes are created via raw SQL in the migration (Prisma can't express
+//   vector/GIN operator-class indexes on Unsupported types).
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  // Prisma 7: the connection URL lives in prisma.config.ts; the client
+  // connects via the @prisma/adapter-pg driver adapter (see src/lib/db/prisma.ts).
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector")]
+}
+
+// ===========================================================================
+// Enums
+// ===========================================================================
+
+enum UserRole {
+  BUYER
+  EDITOR
+  ADMIN
+}
+
+enum ProductType {
+  GAME_ASSET
+  ENVIRONMENT_KIT
+  PROCEDURAL_TOOL
+  COURSE
+  BUNDLE
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum MediaKind {
+  THUMBNAIL
+  GALLERY
+  PREVIEW_VIDEO
+  WIREFRAME
+  ENGINE_SCREENSHOT
+  TURNTABLE
+}
+
+enum UploadStatus {
+  PENDING
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PaymentProviderName {
+  STRIPE
+  PADDLE
+}
+
+enum EntitlementSource {
+  PURCHASE
+  BUNDLE
+  GRANT
+  MEMBERSHIP
+}
+
+// Subscription tiers. An ordered scale: STUDIO includes everything PRO does.
+// Tier coverage and member pricing are derived from this rank in code.
+enum MembershipTier {
+  FREE
+  PRO
+  STUDIO
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE_SINGLE
+  MULTIPLE_CHOICE_MULTI
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+enum ConciergeRole {
+  USER
+  ASSISTANT
+  TOOL
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ALL_LEVELS
+}
+
+// ===========================================================================
+// Auth.js (NextAuth v5) — DB sessions (revocable)
+// ===========================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          UserRole       @default(BUYER)
+  // Subscription tier. FREE = à la carte only; PRO/STUDIO unlock the
+  // membership-included library + member pricing. Granting is reflected as
+  // MEMBERSHIP-source Entitlements so ownership stays single-sourced.
+  membershipTier MembershipTier @default(FREE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  orders            Order[]
+  entitlements      Entitlement[]
+  enrollments       Enrollment[]
+  lessonProgress    LessonProgress[]
+  quizAttempts      QuizAttempt[]
+  downloadLogs      DownloadLog[]
+  reviews           Review[]
+  conciergeSessions ConciergeSession[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ===========================================================================
+// Catalog taxonomy
+// ===========================================================================
+
+model Category {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  name        String
+  description String?
+  sortOrder   Int           @default(0)
+
+  subcategories Subcategory[]
+  products      Product[]
+}
+
+model Subcategory {
+  id         String  @id @default(cuid())
+  categoryId String
+  slug       String
+  name       String
+  sortOrder  Int     @default(0)
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  slug String @unique
+  name String
+
+  products ProductTag[]
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@index([tagId])
+}
+
+model License {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  name     String
+  summary  String?
+  fullText String?
+  products Product[]
+}
+
+// ===========================================================================
+// Product (shared) + per-category detail tables (table-per-type)
+// ===========================================================================
+
+model Product {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  type          ProductType
+  status        ProductStatus @default(DRAFT)
+  title         String
+  shortDesc     String?
+  fullDesc      String?
+  categoryId    String?
+  subcategoryId String?
+  licenseId     String?
+  priceCents    Int           @default(0)
+  discountCents Int?
+  currency      String        @default("USD")
+  // Cross-cutting catalog facets (apply to every product type, incl. courses).
+  // Single-value, admin-controlled vocabularies that power the browse filters.
+  industry      String?
+  theme         String?
+  style         String?
+  // Membership inclusion: the lowest tier that gets this product for free.
+  // null = à la carte only. PRO-included implies STUDIO-included (rank-derived
+  // in code). Materialized as MEMBERSHIP-source Entitlements per subscriber.
+  includedInTier MembershipTier?
+  publishedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Search: tsvector (FTS) + pgvector embedding (semantic). Populated/indexed
+  // via raw SQL in the migration; see header note.
+  searchVector Unsupported("tsvector")?
+  embedding    Unsupported("vector(1024)")?
+
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id])
+  license     License?     @relation(fields: [licenseId], references: [id])
+
+  media ProductMedia[]
+  tags  ProductTag[]
+
+  gameAssetDetail      GameAssetDetail?
+  environmentKitDetail EnvironmentKitDetail?
+  proceduralToolDetail ProceduralToolDetail?
+  course               Course?
+  asset                ProductAsset?
+
+  bundleItems    BundleItem[] @relation("BundleParent")
+  memberOfBundle BundleItem[] @relation("BundleMember")
+
+  orderItems   OrderItem[]
+  entitlements Entitlement[]
+  reviews      Review[]
+
+  @@index([type, status])
+  @@index([categoryId, status])
+  @@index([subcategoryId])
+  @@index([status, publishedAt])
+  @@index([status, industry])
+  @@index([status, theme])
+  @@index([status, style])
+  @@index([status, includedInTier])
+}
+
+model ProductMedia {
+  id        String    @id @default(cuid())
+  productId String
+  kind      MediaKind
+  url       String
+  alt       String?
+  sortOrder Int       @default(0)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, kind])
+}
+
+model GameAssetDetail {
+  productId      String  @id
+  polycount      Int?
+  isRigged       Boolean @default(false)
+  isAnimated     Boolean @default(false)
+  isPbr          Boolean @default(false)
+  textureResMax  Int?
+  lodCount       Int?
+  fileFormats    String[]
+  targetEngines  String[]
+  software       String[]
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([isRigged, isAnimated, isPbr])
+}
+
+model EnvironmentKitDetail {
+  productId      String  @id
+  moduleCount    Int?
+  isModular      Boolean @default(true)
+  coverageAreaM2 Int?
+  biome          String?
+  fileFormats    String[]
+  targetEngines  String[]
+  software       String[]
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProceduralToolDetail {
+  productId  String  @id
+  hostSoftware String?
+  toolType     String?
+  // The editable-parameter schema. Drives the per-asset configurator and the
+  // landing-page live demo.
+  parameterManifest Json?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ===========================================================================
+// Downloadable assets + immutable versioning
+// ===========================================================================
+
+model ProductAsset {
+  id        String @id @default(cuid())
+  productId String @unique
+
+  product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  versions AssetVersion[]
+}
+
+model AssetVersion {
+  id             String       @id @default(cuid())
+  assetId        String
+  semver         String
+  storageKey     String       @unique
+  fileName       String
+  fileSizeBytes  BigInt?
+  checksumSha256 String?
+  changelog      String?
+  isCurrent      Boolean      @default(false)
+  uploadStatus   UploadStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+
+  asset        ProductAsset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  downloadLogs DownloadLog[]
+
+  @@unique([assetId, semver])
+  @@index([assetId, isCurrent])
+}
+
+// ===========================================================================
+// Bundles
+// ===========================================================================
+
+model BundleItem {
+  bundleId String
+  memberId String
+
+  bundle Product @relation("BundleParent", fields: [bundleId], references: [id], onDelete: Cascade)
+  member Product @relation("BundleMember", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@id([bundleId, memberId])
+  @@index([memberId])
+}
+
+// ===========================================================================
+// Commerce — orders, entitlements, invoices, download audit
+// ===========================================================================
+
+model Order {
+  id                String              @id @default(cuid())
+  userId            String
+  status            OrderStatus         @default(PENDING)
+  provider          PaymentProviderName
+  providerSessionId String?             @unique
+  providerPaymentId String?             @unique
+  subtotalCents     Int
+  totalCents        Int
+  currency          String              @default("USD")
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  items        OrderItem[]
+  entitlements Entitlement[]
+  invoice      Invoice?
+
+  @@index([userId, status])
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  productId  String
+  // Snapshot of title + price at purchase time so the record never drifts.
+  titleSnapshot String
+  priceCents    Int
+  quantity      Int   @default(1)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Entitlement {
+  id        String            @id @default(cuid())
+  userId    String
+  productId String
+  source    EntitlementSource @default(PURCHASE)
+  orderId   String?
+  grantedAt DateTime          @default(now())
+  revokedAt DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  // One ownership row per (user, product); the single source of truth.
+  @@unique([userId, productId])
+  @@index([productId])
+  @@index([userId, revokedAt])
+}
+
+model Invoice {
+  id         String   @id @default(cuid())
+  orderId    String   @unique
+  number     Int      @unique
+  pdfKey     String?
+  // Frozen snapshot of buyer + line items at issue time.
+  snapshot   Json
+  issuedAt   DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+}
+
+model DownloadLog {
+  id             String   @id @default(cuid())
+  userId         String
+  assetVersionId String
+  issuedAt       DateTime @default(now())
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetVersion AssetVersion @relation(fields: [assetVersionId], references: [id])
+
+  @@index([userId, issuedAt])
+  @@index([assetVersionId])
+}
+
+// ===========================================================================
+// LMS — courses, chapters, lessons (unlisted YouTube), quizzes, progress
+// ===========================================================================
+
+model Course {
+  id        String @id @default(cuid())
+  productId String @unique
+  summary   String?
+
+  // Syllabus metadata shown on the public course page and used by course
+  // filters. All optional so a course can be drafted before it's fully spec'd.
+  level           CourseLevel?
+  estimatedTime   String? // human label, e.g. "6 weeks · 5 hrs/week"
+  releaseDate     DateTime?
+  prerequisites   String? // free text (multiline)
+  instructor      String?
+  instructorTitle String?
+  software        String[] // tools used in the course
+  outcomes        String[] // "what you'll learn" bullet points
+  expectedRoi     String? // free text on the payoff / career value
+
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  chapters    Chapter[]
+  enrollments Enrollment[]
+}
+
+model Chapter {
+  id        String  @id @default(cuid())
+  courseId  String
+  title     String
+  sortOrder Int     @default(0)
+
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+  quizzes Quiz[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id              String  @id @default(cuid())
+  chapterId       String
+  title           String
+  // Unlisted YouTube video id; raw URL never surfaced in the UI.
+  youtubeVideoId  String?
+  durationSeconds Int?
+  attachments     Json?
+  sortOrder       Int     @default(0)
+
+  chapter  Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@index([chapterId])
+}
+
+model LessonProgress {
+  id                 String   @id @default(cuid())
+  userId             String
+  lessonId           String
+  watchedSeconds     Int      @default(0)
+  maxPositionSeconds Int      @default(0)
+  lastPositionSeconds Int     @default(0)
+  completed          Boolean  @default(false)
+  updatedAt          DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+}
+
+model Quiz {
+  id                 String  @id @default(cuid())
+  chapterId          String
+  title              String
+  passingScore       Int     @default(70)
+  allowRetake        Boolean @default(true)
+  showCorrectAnswers Boolean @default(true)
+  requiredToContinue Boolean @default(false)
+
+  chapter   Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@index([chapterId])
+}
+
+model Question {
+  id        String       @id @default(cuid())
+  quizId    String
+  type      QuestionType
+  prompt    String
+  sortOrder Int          @default(0)
+
+  quiz    Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options AnswerOption[]
+
+  @@index([quizId])
+}
+
+model AnswerOption {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  // Never sent to the client mid-attempt.
+  isCorrect  Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  quizId      String
+  scorePct    Int
+  passed      Boolean
+  answers     Json
+  submittedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId, quizId])
+}
+
+model Enrollment {
+  id         String   @id @default(cuid())
+  userId     String
+  courseId   String
+  enrolledAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+// ===========================================================================
+// AI concierge — session/message logs (analytics + catalog-gap detection)
+// ===========================================================================
+
+model ConciergeSession {
+  id        String   @id @default(cuid())
+  userId    String?
+  brief     String?
+  createdAt DateTime @default(now())
+
+  user     User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages ConciergeMessage[]
+
+  @@index([userId])
+}
+
+model ConciergeMessage {
+  id                  String        @id @default(cuid())
+  sessionId           String
+  role                ConciergeRole
+  content             String
+  recommendedProductIds String[]
+  createdAt           DateTime      @default(now())
+
+  session ConciergeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+// ===========================================================================
+// Reviews
+// ===========================================================================
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int
+  body      String?
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // One review per buyer per product.
+  @@unique([userId, productId])
+  @@index([productId])
+}

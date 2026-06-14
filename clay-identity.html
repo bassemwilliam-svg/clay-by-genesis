@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Clay — Wet Clay identity</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bone: #f5f0eb;
+        --paper: #efe7dd;
+        --terracotta: #b85c38;
+        --terracotta-hover: #a04e2e;
+        --clay-light: #d08a5e;
+        --ink: #2a2018;
+        --warm-dark: #1a1512;
+        --muted: #6b5d4f;
+        --on-dark: #c9beb1;
+        --btn-text: #f8f3ee;
+        /* Paper grain — faint fractal noise, multiplied over warm surfaces. */
+        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+      }
+
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bone);
+        color: var(--ink);
+        font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+      .mono {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+      }
+      .wrap { width: 100%; max-width: 72rem; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
+      @media (min-width: 768px) { .wrap { padding-left: 2.5rem; padding-right: 2.5rem; } }
+
+      /* ---- Clay form (sculptural morphing render stand-in) ---- */
+      @keyframes clay-morph {
+        0%, 100% { border-radius: 42% 58% 55% 45% / 55% 42% 58% 45%; }
+        50%      { border-radius: 56% 44% 42% 58% / 44% 58% 46% 54%; }
+      }
+      @keyframes clay-drift {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50%      { transform: translate(-1.5%, 1.5%) scale(1.03); }
+      }
+      .clay-form {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 58%;
+        height: 62%;
+        animation: clay-morph 9s ease-in-out infinite;
+        box-shadow:
+          inset -10px -16px 32px rgba(60, 28, 14, 0.45),
+          inset 12px 14px 28px rgba(255, 228, 200, 0.45),
+          0 26px 50px -18px rgba(74, 30, 14, 0.55);
+      }
+      .clay-form.small { width: 62%; height: 62%; }
+      .clay-form .sheen {
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: radial-gradient(40% 30% at 34% 26%, rgba(255, 240, 224, 0.6), transparent 70%);
+      }
+      .drift { animation: clay-drift 14s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce) {
+        .clay-form, .drift { animation: none; }
+      }
+
+      .grain {
+        position: absolute;
+        inset: 0;
+        background-image: var(--grain);
+        mix-blend-mode: multiply;
+        pointer-events: none;
+      }
+
+      /* ---- Buttons ---- */
+      .btn {
+        display: inline-flex;
+        height: 3rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0 1.75rem;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-primary {
+        background: var(--terracotta);
+        color: var(--btn-text);
+        box-shadow: 0 14px 32px -12px rgba(184, 92, 56, 0.85);
+      }
+      .btn-primary:hover {
+        background: var(--terracotta-hover);
+        box-shadow: 0 18px 38px -12px rgba(184, 92, 56, 0.9);
+      }
+      .btn-ghost {
+        border: 1px solid rgba(42, 32, 24, 0.2);
+        color: var(--ink);
+        background: transparent;
+      }
+      .btn-ghost:hover {
+        border-color: rgba(184, 92, 56, 0.6);
+        background: rgba(184, 92, 56, 0.05);
+        color: var(--terracotta);
+      }
+
+      .label {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.6875rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Top bar / wordmark -->
+    <header class="wrap" style="display:flex;align-items:center;justify-content:space-between;padding-top:1.5rem;padding-bottom:1.5rem;">
+      <div style="display:flex;align-items:baseline;gap:0.625rem;">
+        <span style="font-size:1.5rem;font-weight:600;letter-spacing:-0.02em;">Clay</span>
+        <span class="mono" style="font-size:0.625rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">by Genesis</span>
+      </div>
+      <nav style="display:flex;align-items:center;gap:1.75rem;font-size:0.875rem;color:var(--muted);">
+        <span>Browse</span>
+        <span>Courses</span>
+        <span>Library</span>
+        <span style="display:inline-flex;height:2.25rem;align-items:center;border:1px solid rgba(42,32,24,0.2);border-radius:9999px;padding:0 1rem;color:var(--ink);">Sign in</span>
+      </nav>
+    </header>
+
+    <!-- Hero -->
+    <section style="position:relative;overflow:hidden;">
+      <div class="grain" style="opacity:0.55;" aria-hidden="true"></div>
+      <div class="wrap" style="position:relative;display:grid;grid-template-columns:1fr;gap:2.5rem;align-items:center;padding-top:2.5rem;padding-bottom:4rem;">
+        <div>
+          <span style="display:inline-flex;align-items:center;gap:0.5rem;border-radius:9999px;background:rgba(184,92,56,0.1);padding:0.375rem 0.75rem;" class="mono">
+            <span style="display:inline-block;height:0.375rem;width:0.375rem;border-radius:9999px;background:var(--terracotta);"></span>
+            <span style="font-size:0.6875rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--terracotta-hover);">Procedural asset marketplace</span>
+          </span>
+          <h1 style="margin:1.5rem 0 0;font-size:3rem;font-weight:600;line-height:1.02;letter-spacing:-0.02em;">
+            Start with clay.<br />
+            <span style="color:var(--terracotta);">Ship a world.</span>
+          </h1>
+          <p style="margin-top:1.25rem;max-width:28rem;font-size:1.125rem;line-height:1.7;color:var(--muted);">
+            Pull a procedural asset off the shelf, reshape it live, and make it
+            unmistakably yours — engine-ready in minutes, not weeks. The raw
+            material is here. The world is yours to form.
+          </p>
+          <div style="margin-top:2rem;display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;">
+            <a class="btn btn-primary" href="#">Browse the catalog</a>
+            <a class="btn btn-ghost" href="#">Try the live demo</a>
+          </div>
+        </div>
+
+        <!-- Hero clay form on a warm plinth -->
+        <div style="position:relative;">
+          <div class="drift" style="position:relative;margin:0 auto;aspect-ratio:1;width:100%;max-width:24rem;overflow:hidden;border-radius:2rem;background:radial-gradient(120% 120% at 70% 10%, #f3e7d8 0%, #e7d6c2 60%, #dcc7ae 100%);box-shadow:0 40px 90px -40px rgba(74,48,30,0.55);">
+            <div class="grain" style="opacity:0.4;" aria-hidden="true"></div>
+            <div class="clay-form" style="background:radial-gradient(120% 95% at 38% 22%, hsl(44 55% 74%) 0%, hsl(40 58% 60%) 32%, hsl(35 60% 46%) 66%, hsl(32 58% 33%) 100%);">
+              <div class="sheen"></div>
+            </div>
+          </div>
+          <span class="mono" style="position:absolute;bottom:-0.75rem;left:50%;transform:translateX(-50%);border-radius:9999px;background:var(--paper);padding:0.25rem 0.75rem;font-size:0.625rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);box-shadow:0 4px 8px -4px rgba(74,48,30,0.4);">Live render · stand-in</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- The system — palette + type -->
+    <section style="border-top:1px solid rgba(42,32,24,0.1);border-bottom:1px solid rgba(42,32,24,0.1);background:rgba(239,231,221,0.6);">
+      <div class="wrap" style="display:grid;grid-template-columns:1fr;gap:2.5rem;padding-top:3rem;padding-bottom:3rem;">
+        <div>
+          <span class="label">Palette</span>
+          <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:1rem;" id="palette"></div>
+        </div>
+        <div>
+          <span class="label">Type</span>
+          <p style="margin:1rem 0 0;font-size:2.25rem;font-weight:600;line-height:1.15;letter-spacing:-0.02em;">Outfit, shaped soft.</p>
+          <p style="margin-top:0.5rem;font-size:1rem;line-height:1.7;color:var(--muted);">Warm body copy carries the story; the headline does the work.</p>
+          <p class="mono" style="margin-top:1rem;font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);">IBM Plex Mono · specs · engines · part codes</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Catalog cards -->
+    <section class="wrap" style="padding-top:4rem;padding-bottom:4rem;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+        <div>
+          <span class="label">Fresh from the studio</span>
+          <h2 style="margin:0.5rem 0 0;font-size:1.5rem;font-weight:600;letter-spacing:-0.02em;">Pieces ready to shape</h2>
+        </div>
+        <span class="mono" style="font-size:0.6875rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--terracotta-hover);">View all →</span>
+      </div>
+      <div id="cards" style="margin-top:1.75rem;display:grid;grid-template-columns:1fr;gap:1.5rem;"></div>
+    </section>
+
+    <!-- Spec readout -->
+    <section class="wrap" style="padding-bottom:4rem;">
+      <div style="display:grid;grid-template-columns:1fr;gap:1.5rem;border:1px solid rgba(42,32,24,0.1);border-radius:1rem;background:var(--paper);padding:1.5rem;">
+        <div>
+          <span class="label">Specification sheet</span>
+          <h2 style="margin:0.5rem 0 0;font-size:1.5rem;font-weight:600;letter-spacing:-0.02em;">Technical data, kept honest</h2>
+          <p style="margin-top:0.75rem;font-size:0.875rem;line-height:1.7;color:var(--muted);">The numbers a buyer actually needs — formats, engines, polycount — stay front and center. Warmth doesn't mean vague.</p>
+        </div>
+        <dl id="specs" style="margin:0;overflow:hidden;border:1px solid rgba(42,32,24,0.1);border-radius:0.75rem;"></dl>
+      </div>
+    </section>
+
+    <!-- Warm-dark variant -->
+    <section style="position:relative;overflow:hidden;background:var(--warm-dark);">
+      <div class="grain" style="opacity:0.35;mix-blend-mode:soft-light;" aria-hidden="true"></div>
+      <div class="wrap" style="position:relative;display:grid;grid-template-columns:1fr;gap:2.5rem;align-items:center;padding-top:5rem;padding-bottom:5rem;">
+        <div>
+          <span class="mono" style="font-size:0.6875rem;letter-spacing:0.16em;text-transform:uppercase;color:var(--clay-light);">After dark</span>
+          <h2 style="margin:0.75rem 0 0;font-size:2.25rem;font-weight:600;line-height:1.15;letter-spacing:-0.02em;color:var(--bone);">The same hands,<br />warmer light.</h2>
+          <p style="margin-top:1rem;max-width:24rem;font-size:1rem;line-height:1.7;color:var(--on-dark);">Product pages and the configurator can run on warm dark when the render needs to glow — the clay accent carries straight through.</p>
+          <div style="margin-top:1.75rem;display:flex;flex-wrap:wrap;gap:0.75rem;">
+            <a class="btn" style="background:var(--clay-light);color:var(--warm-dark);" href="#">Open configurator</a>
+            <a class="btn" style="border:1px solid rgba(245,240,235,0.2);color:var(--bone);" href="#">See the asset</a>
+          </div>
+        </div>
+        <div style="position:relative;margin:0 auto;aspect-ratio:1;width:100%;max-width:24rem;overflow:hidden;border-radius:2rem;background:radial-gradient(120% 120% at 70% 10%, #2a201a 0%, #221a15 60%, #1a1512 100%);box-shadow:0 40px 90px -40px rgba(0,0,0,0.7);">
+          <div class="clay-form" style="background:radial-gradient(120% 95% at 38% 22%, hsl(50 55% 74%) 0%, hsl(46 58% 60%) 32%, hsl(41 60% 46%) 66%, hsl(38 58% 33%) 100%);">
+            <div class="sheen"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="wrap" style="display:flex;flex-direction:column;gap:1rem;padding-top:2.5rem;padding-bottom:2.5rem;">
+      <div style="display:flex;align-items:baseline;gap:0.625rem;">
+        <span style="font-size:1.125rem;font-weight:600;letter-spacing:-0.02em;">Clay</span>
+        <span class="mono" style="font-size:0.625rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);">by Genesis</span>
+      </div>
+      <p class="mono" style="margin:0;font-size:0.6875rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);">Procedural · Customizable · Engine-ready</p>
+    </footer>
+
+    <script>
+      // Responsive two-column layouts without a CSS framework.
+      const mq = window.matchMedia("(min-width: 768px)");
+      function applyCols() {
+        const wide = mq.matches;
+        document.querySelectorAll("section .wrap").forEach((el) => {
+          if (el.querySelector("h1")) el.style.gridTemplateColumns = wide ? "1.1fr 0.9fr" : "1fr";
+        });
+      }
+      // Palette swatches
+      const PALETTE = [
+        ["Bone", "#F5F0EB"], ["Paper", "#EFE7DD"], ["Terracotta", "#B85C38"],
+        ["Clay light", "#D08A5E"], ["Ink", "#2A2018"], ["Warm dark", "#1A1512"],
+      ];
+      document.getElementById("palette").innerHTML = PALETTE.map(([name, hex]) => `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
+          <span style="height:3.5rem;width:3.5rem;border-radius:1rem;background:${hex};box-shadow:inset 0 0 0 1px rgba(42,32,24,0.12), 0 8px 18px -10px rgba(74,48,30,0.5);"></span>
+          <span class="mono" style="text-align:center;font-size:0.625rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">${name}<br/>${hex}</span>
+        </div>`).join("");
+
+      // Catalog cards
+      const SAMPLES = [
+        { code: "CL-7A21", type: "Game asset", title: "Sci-Fi Supply Crate", desc: "Modular hardsurface crate, PBR, LODs baked. Reskin the panels and decals to your faction.", price: "$24", grad: "hsl(42 55% 74%) 0%, hsl(38 58% 60%) 32%, hsl(33 60% 46%) 66%, hsl(30 58% 33%) 100%" },
+        { code: "CL-3F94", type: "Environment kit", title: "WW2 French Village Kit", desc: "Forty modular pieces — walls, roofs, props — snap-assemble a whole bombed-out street.", price: "$89", was: "$119", grad: "hsl(56 55% 74%) 0%, hsl(52 58% 60%) 32%, hsl(47 60% 46%) 66%, hsl(44 58% 33%) 100%" },
+        { code: "CL-1C08", type: "Procedural tool", title: "Modular Wall Generator", desc: "Dial height, damage, and material live. Bakes clean geometry straight into your engine.", price: "$39", grad: "hsl(32 55% 74%) 0%, hsl(28 58% 60%) 32%, hsl(23 60% 46%) 66%, hsl(20 58% 33%) 100%" },
+      ];
+      document.getElementById("cards").innerHTML = SAMPLES.map((s) => `
+        <div style="display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(42,32,24,0.1);border-radius:1rem;background:var(--paper);box-shadow:0 20px 50px -26px rgba(74,48,30,0.45);">
+          <div style="position:relative;aspect-ratio:4/3;width:100%;overflow:hidden;">
+            <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 70% 10%, #f1e4d4 0%, #e4d2bc 65%, #d7c0a6 100%);"></div>
+            <div class="grain" style="opacity:0.4;"></div>
+            <div class="clay-form small" style="background:radial-gradient(120% 95% at 38% 22%, ${s.grad});"><div class="sheen"></div></div>
+            <span class="mono" style="position:absolute;left:0.75rem;top:0.75rem;border-radius:9999px;background:rgba(245,240,235,0.85);padding:0.25rem 0.625rem;font-size:0.625rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);backdrop-filter:blur(4px);">${s.type}</span>
+            <span class="mono" style="position:absolute;right:0.75rem;top:0.75rem;font-size:0.625rem;letter-spacing:0.1em;color:var(--terracotta-hover);">${s.code}</span>
+          </div>
+          <div style="display:flex;flex:1;flex-direction:column;gap:0.5rem;padding:1.25rem;">
+            <h3 style="margin:0;font-size:1.125rem;font-weight:600;line-height:1.2;letter-spacing:-0.02em;">${s.title}</h3>
+            <p style="margin:0;font-size:0.875rem;line-height:1.6;color:var(--muted);">${s.desc}</p>
+            <div style="margin-top:auto;display:flex;align-items:baseline;gap:0.5rem;border-top:1px dashed rgba(42,32,24,0.15);padding-top:0.75rem;">
+              <span class="mono" style="font-size:0.625rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);">Unit</span>
+              ${s.was
+                ? `<span class="mono" style="margin-left:auto;font-size:1rem;font-weight:600;color:var(--terracotta);">${s.price}</span><span class="mono" style="font-size:0.75rem;color:var(--muted);text-decoration:line-through;">${s.was}</span>`
+                : `<span class="mono" style="margin-left:auto;font-size:1rem;font-weight:600;">${s.price}</span>`}
+            </div>
+          </div>
+        </div>`).join("");
+
+      // Spec rows
+      const SPECS = [
+        ["01 · Polycount", "12,480 tris"], ["02 · PBR textures", "Yes · 4K"],
+        ["03 · LOD levels", "3"], ["04 · File formats", "FBX, GLTF, OBJ"],
+        ["05 · Target engines", "Unreal, Unity, Godot"],
+      ];
+      document.getElementById("specs").innerHTML = SPECS.map(([k, v], i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.75rem 1rem;background:${i % 2 ? "transparent" : "rgba(42,32,24,0.03)"};">
+          <dt class="mono" style="font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">${k}</dt>
+          <dd class="mono" style="margin:0;font-size:0.875rem;font-weight:500;color:var(--ink);">${v}</dd>
+        </div>`).join("");
+
+      // Responsive grids (cards + sections)
+      function applyResponsive() {
+        const wide = mq.matches;
+        document.getElementById("cards").style.gridTemplateColumns = wide ? "repeat(3, 1fr)" : "1fr";
+        document.querySelectorAll("section").forEach((sec) => {
+          const grid = sec.querySelector(".wrap");
+          if (!grid) return;
+          if (sec.querySelector("#palette")) grid.style.gridTemplateColumns = wide ? "1fr 1fr" : "1fr";
+          if (sec.querySelector("#specs")) grid.firstElementChild.style.gridTemplateColumns = wide ? "1fr 1.4fr" : "1fr";
+        });
+        applyCols();
+      }
+      applyResponsive();
+      mq.addEventListener("change", applyResponsive);
+    </script>
+  </body>
+</html>
