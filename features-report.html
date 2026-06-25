@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clay by Genesis — Feature Report</title>
+<meta name="description" content="Everything implemented in the Clay by Genesis marketplace — a build report for the team." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --cyan:#22d3ee; --cyan-deep:#0e9bb5;
+    --bg:#0b1220; --card:#121c2d; --card-2:#0f1729;
+    --ink:#e9eef6; --muted:#93a4bd; --faint:#5c6f8a;
+    --border:rgba(146,164,189,0.16); --grid:rgba(146,164,189,0.06);
+    --good:#34d399; --warn:#fbbf24;
+    --radius:0.7rem; --maxw:1100px;
+  }
+  [data-theme="light"]{
+    --bg:#f4f6f9; --card:#ffffff; --card-2:#eef2f7;
+    --ink:#0f1729; --muted:#475569; --faint:#7a8aa0;
+    --border:rgba(15,23,41,0.12); --grid:rgba(15,23,41,0.05);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth; scroll-padding-top:80px;}
+  body{
+    margin:0; background:
+      linear-gradient(var(--grid) 1px,transparent 1px) 0 0/64px 64px,
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/64px 64px,
+      var(--bg);
+    color:var(--ink); font-family:"Outfit",system-ui,sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;}
+  .label{font-family:"IBM Plex Mono",monospace; text-transform:uppercase; letter-spacing:0.14em; font-size:11px; color:var(--faint);}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 24px;}
+
+  /* top bar */
+  header.bar{
+    position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom:1px solid var(--border);
+  }
+  .bar-in{display:flex; align-items:center; gap:16px; height:60px;}
+  .brand{display:flex; align-items:baseline; gap:8px; font-weight:700; letter-spacing:-0.02em; font-size:18px;}
+  .brand .by{font-family:"IBM Plex Mono",monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.16em; color:var(--faint);}
+  .brand .dot{color:var(--cyan);}
+  nav.toc{margin-left:auto; display:flex; gap:4px; flex-wrap:wrap;}
+  nav.toc a{font-size:13px; color:var(--muted); text-decoration:none; padding:6px 10px; border-radius:6px;}
+  nav.toc a:hover{color:var(--ink); background:var(--card);}
+  .toggle{margin-left:8px; border:1px solid var(--border); background:var(--card); color:var(--ink); width:34px; height:34px; border-radius:8px; cursor:pointer; font-size:15px; display:grid; place-items:center;}
+  @media(max-width:880px){ nav.toc{display:none;} }
+
+  /* hero */
+  .hero{padding:64px 0 36px; border-bottom:1px solid var(--border);}
+  .hero .ey{display:flex; align-items:center; gap:8px; margin-bottom:18px;}
+  .hero .ey .sq{width:9px;height:9px;background:var(--cyan);}
+  h1{font-size:clamp(32px,5.4vw,54px); line-height:1.04; letter-spacing:-0.035em; margin:0 0 16px; font-weight:700;}
+  h1 .ac{color:var(--cyan);}
+  .lede{font-size:clamp(17px,2.2vw,20px); color:var(--muted); max-width:720px; margin:0;}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:26px;}
+  .pill{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:999px;}
+  .pill b{color:var(--ink); font-weight:600;}
+
+  /* stat band */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin:40px 0;}
+  .stat{background:var(--card); padding:20px 18px;}
+  .stat .n{font-size:30px; font-weight:700; letter-spacing:-0.02em; color:var(--cyan);}
+  .stat .t{font-size:13px; color:var(--muted); margin-top:2px;}
+  @media(max-width:720px){ .stats{grid-template-columns:repeat(2,1fr);} }
+
+  /* sections */
+  section{padding:46px 0; border-bottom:1px solid var(--border);}
+  section h2{font-size:clamp(22px,3vw,30px); letter-spacing:-0.02em; margin:6px 0 6px; font-weight:700;}
+  section .intro{color:var(--muted); max-width:760px; margin:0 0 26px;}
+  h3{font-size:18px; letter-spacing:-0.01em; margin:30px 0 12px; font-weight:600;}
+
+  /* feature cards */
+  .cards{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  @media(max-width:760px){ .cards{grid-template-columns:1fr;} }
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px;
+    position:relative;
+  }
+  .card::before{content:""; position:absolute; left:0; top:18px; bottom:18px; width:2px; background:var(--cyan); border-radius:2px; opacity:0.8;}
+  .card h4{margin:0 0 8px; font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px; padding-left:8px;}
+  .card .k{font-family:"IBM Plex Mono",monospace; font-size:10px; color:var(--cyan); text-transform:uppercase; letter-spacing:0.12em;}
+  .card ul{margin:8px 0 0; padding-left:26px;}
+  .card li{font-size:14.5px; color:var(--muted); margin:5px 0;}
+  .card li b{color:var(--ink); font-weight:600;}
+
+  /* simple two-col list blocks */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:760px){ .grid2{grid-template-columns:1fr;} }
+  .block{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px;}
+  .block h4{margin:0 0 10px; font-size:15px; font-weight:600;}
+  .block ul{margin:0; padding-left:20px;} .block li{font-size:14px; color:var(--muted); margin:5px 0;} .block li b{color:var(--ink);}
+
+  /* route table */
+  table{width:100%; border-collapse:collapse; font-size:13.5px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:top;}
+  th{font-family:"IBM Plex Mono",monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--faint); background:var(--card-2);}
+  td:first-child{font-family:"IBM Plex Mono",monospace; color:var(--cyan); white-space:nowrap;}
+  tr:last-child td{border-bottom:0;}
+  td .tag{font-family:"IBM Plex Mono",monospace; font-size:10px; padding:2px 7px; border-radius:5px; border:1px solid var(--border); color:var(--muted);}
+  .tag.ssg{color:var(--good); border-color:color-mix(in srgb,var(--good) 40%,transparent);}
+  .tag.dyn{color:var(--cyan); border-color:color-mix(in srgb,var(--cyan) 40%,transparent);}
+
+  details.acc{border:1px solid var(--border); border-radius:var(--radius); background:var(--card); margin-bottom:12px; overflow:hidden;}
+  details.acc summary{cursor:pointer; padding:14px 18px; font-weight:600; list-style:none; display:flex; align-items:center; gap:10px;}
+  details.acc summary::-webkit-details-marker{display:none;}
+  details.acc summary .chev{margin-left:auto; color:var(--faint); transition:transform .2s;}
+  details.acc[open] summary .chev{transform:rotate(90deg);}
+  details.acc .body{padding:0 18px 16px;}
+
+  /* status notes */
+  .note{display:flex; gap:12px; background:var(--card); border:1px solid var(--border); border-left:3px solid var(--warn); border-radius:var(--radius); padding:14px 16px; margin:10px 0; font-size:14px;}
+  .note .i{color:var(--warn); font-weight:700;}
+  .note b{color:var(--ink);}
+  .note .m{color:var(--muted);}
+
+  .swatches{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px;}
+  .sw{display:flex; align-items:center; gap:8px; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:7px 10px; background:var(--card);}
+  .sw .chip{width:18px; height:18px; border-radius:4px; border:1px solid var(--border);}
+
+  footer{padding:40px 0 70px; color:var(--faint); font-size:13px;}
+  footer .label{margin-bottom:6px;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:18px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap bar-in">
+    <div class="brand">Clay<span class="dot">.</span><span class="by">by Genesis</span></div>
+    <nav class="toc">
+      <a href="#overview">Overview</a>
+      <a href="#routes">Pages</a>
+      <a href="#features">Features</a>
+      <a href="#data">Data model</a>
+      <a href="#design">Design</a>
+      <a href="#stack">Stack</a>
+      <a href="#status">Status</a>
+    </nav>
+    <button class="toggle" id="themeBtn" aria-label="Toggle theme">◑</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero" id="overview">
+    <div class="ey"><span class="sq"></span><span class="label">Build report · prepared for the team</span></div>
+    <h1>Clay by Genesis<br><span class="ac">is built.</span> Here is everything in it.</h1>
+    <p class="lede">An owned marketplace for procedural 3D assets, environment kits, procedural tools, courses, and bundles — with memberships, an AI concierge, secure downloads, and a full learning platform. This is a feature-by-feature map of what exists today, so the art team can refine the surface and stakeholders can see the whole machine.</p>
+    <div class="meta-row">
+      <span class="pill"><b>Next.js 16</b> · App Router</span>
+      <span class="pill"><b>React 19</b> + TypeScript</span>
+      <span class="pill"><b>Prisma 7</b> + Postgres / pgvector</span>
+      <span class="pill"><b>Claude</b> AI concierge</span>
+      <span class="pill"><b>three.js</b> live configurator</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n">24</div><div class="t">user-facing pages</div></div>
+    <div class="stat"><div class="n">16</div><div class="t">API endpoints</div></div>
+    <div class="stat"><div class="n">13</div><div class="t">major feature areas</div></div>
+    <div class="stat"><div class="n">30+</div><div class="t">data models</div></div>
+  </div>
+
+  <!-- WHAT IT IS -->
+  <section id="what">
+    <span class="label">The product</span>
+    <h2>One marketplace, five product types, one pipeline</h2>
+    <p class="intro">Clay sells procedural game assets, environment kits, procedural tools, courses, and bundles through a single publishing and ownership pipeline. A few architectural decisions hold the whole thing together:</p>
+    <div class="cards">
+      <div class="card"><h4><span class="k">core</span> Ownership is one source of truth</h4><ul>
+        <li>Every "who owns what" question is answered by a single <b>Entitlement</b> row per buyer + product — whether it came from a purchase, a bundle, a manual grant, or a membership.</li>
+        <li>Library, downloads, course access, and checkout dedupe all read from the same place, so they never disagree.</li>
+      </ul></div>
+      <div class="card"><h4><span class="k">core</span> Money is exact</h4><ul>
+        <li>All prices are stored as <b>integer cents + currency</b> — never floating point — so totals, discounts, and invoices are penny-accurate.</li>
+        <li>Orders and invoices <b>freeze a snapshot</b> at purchase time, so historical records never drift when prices later change.</li>
+      </ul></div>
+      <div class="card"><h4><span class="k">core</span> Courses are products</h4><ul>
+        <li>A course is the same <b>Product</b> as an asset, so it flows through the same admin, pricing, cart, and checkout. Buying one auto-enrolls the student.</li>
+      </ul></div>
+      <div class="card"><h4><span class="k">core</span> Bundles fan out</h4><ul>
+        <li>Buying a bundle grants individual ownership of <b>every item inside it</b> — each lands in the library separately, ready to download.</li>
+        <li>The same fan-out powers memberships: a tier that includes a bundle gives subscribers all its members.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ROUTES -->
+  <section id="routes">
+    <span class="label">Every screen</span>
+    <h2>The page map</h2>
+    <p class="intro">24 user-facing pages across four zones — public marketing, the storefront, the signed-in account area, and the admin back office. Each is marked by how it renders.</p>
+    <div class="legend">
+      <span><span class="tag ssg">STATIC</span> pre-built &amp; cached (fast, SEO-friendly)</span>
+      <span><span class="tag dyn">DYNAMIC</span> rendered per request (personalized / live data)</span>
+    </div>
+
+    <h3>Marketing &amp; storefront — what shoppers see</h3>
+    <table>
+      <tr><th>Route</th><th>What it does</th><th>Render</th></tr>
+      <tr><td>/</td><td>Landing: hero, the <b>live 3D configurator</b>, featured products &amp; courses, category index</td><td><span class="tag ssg">ISR</span></td></tr>
+      <tr><td>/pricing</td><td>Membership tiers (Free / Pro / Studio); CTAs adapt to the viewer's current tier</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/browse</td><td>Full catalog with faceted filters (type, category, price, industry, theme, style, on-sale, search) + pagination</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/categories/[slug]</td><td>Everything within one category</td><td><span class="tag ssg">ISR</span></td></tr>
+      <tr><td>/products/[slug]</td><td>Product page: gallery, specs, price/license, editable-parameter table, bundle contents, reviews</td><td><span class="tag ssg">ISR</span></td></tr>
+      <tr><td>/courses</td><td>Filterable course index (by level, software) with lesson count &amp; runtime</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/courses/[slug]</td><td>Public course syllabus with an enroll gate for non-owners</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/cart</td><td>Cart contents and totals, with member pricing applied</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/checkout/success</td><td>Post-purchase confirmation; clears the cart</td><td><span class="tag ssg">STAT</span></td></tr>
+    </table>
+
+    <h3>Account — the signed-in buyer (login required)</h3>
+    <table>
+      <tr><th>Route</th><th>What it does</th><th>Render</th></tr>
+      <tr><td>/library</td><td>Owned downloadable assets, versioned, with expiring secure download links</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/learn</td><td>Enrolled courses with progress bars and resume links</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/learn/[slug]</td><td>The course player; redirects to enroll if not owned</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/orders</td><td>Purchase history with live status and invoice-PDF links</td><td><span class="tag dyn">DYN</span></td></tr>
+    </table>
+
+    <h3>Admin — the back office (staff only)</h3>
+    <table>
+      <tr><th>Route</th><th>What it does</th><th>Render</th></tr>
+      <tr><td>/admin</td><td>Admin home &amp; navigation hub</td><td><span class="tag ssg">STAT</span></td></tr>
+      <tr><td>/admin/products</td><td>All products (any status) in one table</td><td><span class="tag ssg">STAT</span></td></tr>
+      <tr><td>/admin/products/new</td><td>Create a product — the type selector reveals category-specific fields</td><td><span class="tag ssg">STAT</span></td></tr>
+      <tr><td>/admin/products/[id]/edit</td><td>Edit a product: asset upload &amp; versioning, storage attach, bundle members</td><td><span class="tag ssg">STAT</span></td></tr>
+      <tr><td>/admin/courses · /[id]</td><td>Course list + the <b>course builder</b> (chapters, lessons, quizzes with answer keys)</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/admin/orders</td><td>Read-only order ledger</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/admin/stats</td><td>Health &amp; analytics dashboard (KPIs, top sellers, Atlas metrics)</td><td><span class="tag dyn">DYN</span></td></tr>
+      <tr><td>/admin/assets</td><td>Storage import / export console</td><td><span class="tag ssg">STAT</span></td></tr>
+    </table>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features">
+    <span class="label">What's built</span>
+    <h2>The 13 feature areas</h2>
+    <p class="intro">Each area below is fully implemented in code. Expand any one for detail.</p>
+
+    <details class="acc" open><summary>① Storefront &amp; catalog<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Faceted browse &amp; search</h4><ul><li>Filter by type, category, keyword, industry, theme, style, and price, with <b>live facet counts</b> that update with the query.</li><li>Trigram-accelerated search; the AI path adds ranked full-text + semantic search.</li></ul></div>
+      <div class="card"><h4>Rich product pages</h4><ul><li>Media gallery, spec sheet pulled from typed per-category data, license, and sale-aware pricing.</li><li>Procedural tools show an <b>editable-parameter table</b> (parameter / type / range / default).</li></ul></div>
+      <div class="card"><h4>Generative blueprint art</h4><ul><li>Every product without a photo gets a <b>deterministic, seeded SVG "blueprint" cover</b> unique to its type — wireframe, contour map, node graph, orbit diagram, or stacked frames.</li></ul></div>
+      <div class="card"><h4>Before / after slider</h4><ul><li>A draggable, keyboard-accessible wipe between "Clay" (the blueprint) and "Shipped" (the final render) — the brand story in one interaction.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>② Live 3D configurator<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Real-time parametric model</h4><ul><li>A <b>three.js / react-three-fiber</b> scene on the landing page rebuilds a construction tank live as you drag sliders — drag to orbit, auto-rotate, soft shadows, three-point lighting.</li></ul></div>
+      <div class="card"><h4>Eight live parameters</h4><ul><li>Height, platforms on/off, floor count, side rails, ladder rungs, ladder tilt, weathering, and finish (concrete / galvanized / painted / weathered steel).</li><li>Parameter names mirror a real Houdini Digital Asset 1:1, so the same controls could later drive a server-side cook.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>③ AI concierge "Atlas"<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Real Claude, with tools</h4><ul><li>Powered by <b>Claude (Sonnet)</b>, streaming, able to call tools to <b>search the catalog</b>, pull product details, and gather web context.</li><li>Recommendations are <b>real Clay products</b> only — it never sends shoppers off-platform.</li></ul></div>
+      <div class="card"><h4>Hybrid search under the hood</h4><ul><li>Three tiers with graceful fallback: <b>semantic</b> (vector similarity via Voyage embeddings) → <b>full-text</b> → keyword. Filters always respected.</li></ul></div>
+      <div class="card"><h4>Inline product cards</h4><ul><li>Results render as real storefront cards inside the chat. Entry points: a landing "find assets" prompt and a persistent floating "Ask Atlas" panel.</li></ul></div>
+      <div class="card"><h4>Logged for insight</h4><ul><li>Every conversation is logged with what it recommended — feeding the admin "interest &amp; catalog-gap" analytics.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>④ Cart, checkout &amp; payments<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Membership-aware cart</h4><ul><li>Cart lives in a cookie, self-heals dropped items, and applies the <b>membership lens</b> — tier-included items show as free, others get the member discount.</li></ul></div>
+      <div class="card"><h4>Safe checkout</h4><ul><li>Removes already-owned and covered items, enforces a single currency, creates a frozen-snapshot order, and opens a provider checkout. Ownership is never granted here.</li></ul></div>
+      <div class="card"><h4>Provider-agnostic</h4><ul><li>A clean payments interface with a <b>fully working Stripe adapter</b>; switching providers is a config change, not a rewrite.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑤ Webhooks → entitlements → invoices → receipts<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>One trustworthy grant point</h4><ul><li>Ownership is granted <b>only</b> by the verified payment webhook, and the whole pipeline is <b>idempotent</b> — replays never double-grant or double-invoice.</li></ul></div>
+      <div class="card"><h4>Bundles &amp; courses handled</h4><ul><li>Bundle purchases fan out to every member; course purchases auto-create an enrollment.</li></ul></div>
+      <div class="card"><h4>Invoices &amp; receipts</h4><ul><li>Sequential numbered invoices (INV-000042) rendered as <b>PDF on demand</b>; an HTML receipt email on every paid order.</li></ul></div>
+      <div class="card"><h4>Refunds</h4><ul><li>A refund <b>revokes download access</b> while leaving membership/grant access intact; re-purchase restores it.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑥ Secure downloads<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Ownership-gated, expiring links</h4><ul><li>Every download passes one choke point: existence → <b>ownership</b> → file ready → rate limit → a <b>5-minute signed link</b>. Non-owners get a clean 403.</li></ul></div>
+      <div class="card"><h4>Audited &amp; throttled</h4><ul><li>Each download is logged (who, what version, when, expiry); a per-user rate limit guards against abuse.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑦ Courses &amp; learning platform<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Course builder</h4><ul><li>Build chapters, lessons, and quizzes; reorder freely; edit answer keys; set passing score, retakes, and "required to continue".</li></ul></div>
+      <div class="card"><h4>Protected video</h4><ul><li>Unlisted-YouTube playback through a privacy player — only the video id is stored, never the raw URL, and only entitled students reach it.</li><li>Watch progress is tracked; a lesson completes at <b>95% watched</b>.</li></ul></div>
+      <div class="card"><h4>Real quizzes</h4><ul><li>Four question types (single / multi choice, true-false, short answer), all <b>graded server-side</b> so answers can't leak. Attempts, scores, and retakes are tracked.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑧ Bundles<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Bundle management</h4><ul><li>Add/remove members with guards (no nesting, no self-inclusion). The product page shows the <b>savings vs. buying separately</b>.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑨ Memberships (Free / Pro / Studio)<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Three tiers</h4><ul><li><b>Free</b> à-la-carte · <b>Pro</b> 15% member discount + included items free · <b>Studio</b> 30% discount, includes everything Pro does.</li></ul></div>
+      <div class="card"><h4>Self-healing access</h4><ul><li>Membership access is reconciled automatically whenever a tier, a product's inclusion, or a bundle's contents change — and it's <b>bundle-aware</b>.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑩ Reviews<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Verified-owner reviews</h4><ul><li>Only buyers who own a product can review it; 1–5 stars + optional text, editable. The product page shows the <b>average and recent reviews</b> without slowing the cached page.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑪ Admin back office<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Dynamic product CRUD</h4><ul><li>One form that <b>changes its fields by product type</b>, with validation, slug-collision checks, search re-indexing, and draft → publish workflow.</li></ul></div>
+      <div class="card"><h4>Analytics dashboard</h4><ul><li>Revenue, orders by status, top sellers, catalog matrix, ownership counts, audience, downloads, average rating, and <b>Atlas concierge metrics</b> (sessions, match rate, catalog gaps).</li></ul></div>
+      <div class="card"><h4>Orders ledger &amp; course builder</h4><ul><li>Read-only order history plus the full course authoring surface.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑫ Storage layer (R2 / S3)<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Selectable backend</h4><ul><li>Cloudflare R2 or AWS S3, chosen by config, behind one interface — <b>resumable multipart upload</b>, signed downloads, listing, and server-side copy.</li></ul></div>
+      <div class="card"><h4>Import by reference</h4><ul><li>The admin console can browse an existing bucket and <b>register objects as products/versions</b> without re-uploading — ideal for the studio's existing asset library.</li></ul></div>
+    </div></div></details>
+
+    <details class="acc"><summary>⑬ Accounts, roles &amp; safety<span class="chev">›</span></summary><div class="body"><div class="cards">
+      <div class="card"><h4>Roles</h4><ul><li>Buyer / Editor / Admin with revocable database sessions and guards on every protected page and API.</li></ul></div>
+      <div class="card"><h4>Rate limiting</h4><ul><li>Download issuance is throttled per user (and fails open if the limiter is unavailable, so genuine buyers are never blocked).</li></ul></div>
+    </div></div></details>
+  </section>
+
+  <!-- DATA MODEL -->
+  <section id="data">
+    <span class="label">Underneath</span>
+    <h2>The data model</h2>
+    <p class="intro">30+ models, organized into clean domains. The art team can skim this; it's here so the whole system is legible.</p>
+    <div class="grid2">
+      <div class="block"><h4>Identity</h4><ul><li><b>User</b> (role + membership tier)</li><li><b>Account / Session / VerificationToken</b> (revocable login)</li></ul></div>
+      <div class="block"><h4>Catalog</h4><ul><li><b>Category / Subcategory</b>, <b>Tag</b>, <b>License</b></li><li><b>Product</b> + typed detail tables (Game Asset / Environment Kit / Procedural Tool)</li><li><b>ProductMedia</b> (gallery, wireframe, turntable…)</li></ul></div>
+      <div class="block"><h4>Downloadable assets</h4><ul><li><b>ProductAsset → AssetVersion</b> (immutable, semver, file size, checksum)</li></ul></div>
+      <div class="block"><h4>Commerce</h4><ul><li><b>Order / OrderItem</b> (frozen snapshots)</li><li><b>Entitlement</b> (the ownership row) · <b>Invoice</b> · <b>DownloadLog</b></li><li><b>BundleItem</b></li></ul></div>
+      <div class="block"><h4>Learning</h4><ul><li><b>Course → Chapter → Lesson</b>, <b>LessonProgress</b></li><li><b>Quiz → Question → AnswerOption</b>, <b>QuizAttempt</b>, <b>Enrollment</b></li></ul></div>
+      <div class="block"><h4>AI &amp; feedback</h4><ul><li><b>ConciergeSession / ConciergeMessage</b></li><li><b>Review</b></li></ul></div>
+    </div>
+  </section>
+
+  <!-- DESIGN -->
+  <section id="design">
+    <span class="label">For the art team</span>
+    <h2>The design system</h2>
+    <p class="intro">This is where you come in. The current look is a deliberate "technical workshop / blueprint" aesthetic — the visual argument that these assets are precise, parametric, and yours to shape. Everything here is a starting point to refine.</p>
+
+    <h3>Identity &amp; voice</h3>
+    <div class="cards">
+      <div class="card"><h4>Wordmark &amp; line</h4><ul><li><b>Clay</b> wordmark + "by Genesis" in a mono label. Tagline: <b>"Start with clay. Ship a world."</b></li><li>Footer signature: "© CLAY BY GENESIS · ALL SYSTEMS NOMINAL."</li></ul></div>
+      <div class="card"><h4>Typography</h4><ul><li><b>Outfit</b> for display &amp; body.</li><li><b>IBM Plex Mono</b> is load-bearing — it carries specs, parameters, part codes, coordinates, and prices (the "spec-sheet" voice).</li></ul></div>
+    </div>
+
+    <h3>Palette — "Cyan + cool slate" (with full dark mode)</h3>
+    <div class="swatches">
+      <span class="sw"><span class="chip" style="background:#22d3ee"></span>#22D3EE accent</span>
+      <span class="sw"><span class="chip" style="background:#0b1220"></span>#0B1220 dark canvas</span>
+      <span class="sw"><span class="chip" style="background:#121c2d"></span>#121C2D dark card</span>
+      <span class="sw"><span class="chip" style="background:#f4f6f9"></span>#F4F6F9 light canvas</span>
+      <span class="sw"><span class="chip" style="background:#0f1729"></span>#0F1729 slate ink</span>
+    </div>
+    <p class="intro" style="margin-top:18px">A complete light/dark token set drives every surface (background, card, primary, muted, border, ring…). Dark mode is a real in-app toggle with no flash on load. <b>Try the toggle in the top-right of this page</b> — it's the same system the app uses.</p>
+
+    <h3>Signature visual devices</h3>
+    <div class="cards">
+      <div class="card"><h4>Blueprint surface</h4><ul><li>A faint cool <b>grid background</b>, a subtle grain film, <b>crop-mark corners</b>, thin technical scrollbars, and squared radii — the "drafting table" feel.</li></ul></div>
+      <div class="card"><h4>Generative covers</h4><ul><li>Deterministic SVG schematics per product type — the most distinctive, most refine-able surface in the whole store.</li></ul></div>
+      <div class="card"><h4>The before/after slider &amp; 3D tank</h4><ul><li>The two interactive brand moments that turn "customizable &amp; procedural" from a claim into an experience.</li></ul></div>
+      <div class="card"><h4>Mono labels &amp; part codes</h4><ul><li>Uppercase, wide-tracked mono tags and generated catalog codes (CL-XXXX) give the catalog its instrument-panel personality.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- STACK -->
+  <section id="stack">
+    <span class="label">Engineering</span>
+    <h2>The stack</h2>
+    <div class="grid2">
+      <div class="block"><h4>Core</h4><ul><li>Next.js 16 (App Router, Server Components, Server Actions)</li><li>React 19 · TypeScript 5</li><li>Tailwind CSS v4</li></ul></div>
+      <div class="block"><h4>Data</h4><ul><li>PostgreSQL + Prisma 7 (engine-free driver adapter)</li><li>pgvector for semantic search embeddings</li></ul></div>
+      <div class="block"><h4>Integrations</h4><ul><li>Stripe (payments) · Resend (email) · Upstash (rate limit)</li><li>Cloudflare R2 / AWS S3 (storage)</li><li>YouTube (course video)</li></ul></div>
+      <div class="block"><h4>AI &amp; 3D</h4><ul><li>Claude / Anthropic SDK · Voyage embeddings</li><li>three.js + react-three-fiber + drei</li><li>pdf-lib (invoices)</li></ul></div>
+    </div>
+  </section>
+
+  <!-- STATUS -->
+  <section id="status">
+    <span class="label">Straight talk</span>
+    <h2>What's live, and what's intentionally pending</h2>
+    <p class="intro">The marketplace is implemented end-to-end. A few things are deliberately deferred or wait on an API key — listed honestly so there are no surprises in the demo.</p>
+    <div class="note"><span class="i">!</span><div><b>Interactive login isn't wired yet.</b> <span class="m">The entire roles/sessions/gating system is built; only the sign-in providers (magic-link, OAuth) are deferred. A demo-only "sign in as editor" exists for walkthroughs and is hard-blocked in production. For the art-team demo, the public storefront, landing, configurator, pricing, and product pages are all fully browsable without login.</span></div></div>
+    <div class="note"><span class="i">!</span><div><b>Integrations degrade gracefully without keys.</b> <span class="m">No keys, no crash. Atlas falls back to catalog search without an Anthropic key; semantic search downgrades to full-text without a Voyage key; receipts log instead of send without Resend; rate limiting and storage simply report "not configured." Add a key and the feature lights up.</span></div></div>
+    <div class="note"><span class="i">!</span><div><b>Paddle is a stub; Stripe is complete.</b> <span class="m">The second payment provider is scaffolded but not implemented — Stripe is the working path.</span></div></div>
+    <div class="note"><span class="i">!</span><div><b>Asset checksums &amp; YouTube duration auto-fetch</b> <span class="m">are modeled but not yet wired to a background job / API key (duration can be entered by hand).</span></div></div>
+  </section>
+
+  <footer>
+    <div class="label">Clay by Genesis · build report</div>
+    Procedural worlds, forged to be yours. This document maps the implementation as it stands; the design surface is open for the art team to refine.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var root = document.documentElement;
+    var saved = null;
+    try { saved = localStorage.getItem('clay-report-theme'); } catch(e){}
+    if (saved) root.setAttribute('data-theme', saved);
+    var btn = document.getElementById('themeBtn');
+    btn.addEventListener('click', function(){
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('clay-report-theme', next); } catch(e){}
+    });
+    // active section highlight
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.toc a'));
+    var map = {};
+    links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+    var obs = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        var a = map[en.target.id];
+        if (a && en.isIntersecting){
+          links.forEach(function(l){ l.style.color=''; l.style.background=''; });
+          a.style.color = 'var(--ink)'; a.style.background='var(--card)';
+        }
+      });
+    }, {rootMargin:'-40% 0px -55% 0px'});
+    ['overview','routes','features','data','design','stack','status'].forEach(function(id){
+      var el = document.getElementById(id); if (el) obs.observe(el);
+    });
+  })();
+</script>
+</body>
+</html>
