@@ -29,10 +29,16 @@ Requires Node 20.12+ and a local PostgreSQL with the `pgvector` extension.
 ```bash
 npm install
 cp .env.example .env.local   # then fill in DATABASE_URL and AUTH_SECRET at minimum
-npx prisma migrate dev       # apply migrations
+npx prisma db push           # sync the schema to the database (creates the pgvector extension)
+npx prisma db execute --file prisma/sql/search-indexes.sql --schema prisma/schema.prisma
 npx prisma db seed           # seed catalog + demo data
 npm run dev                  # http://localhost:3000
 ```
+
+`db push` is used (rather than `migrate deploy`) because the schema is the source
+of truth here; it provisions a fresh database to match `prisma/schema.prisma`
+exactly, including the pgvector extension. The `search-indexes.sql` file adds the
+full-text-search trigger and the trigram / HNSW indexes that Prisma cannot express.
 
 All environment variables are documented in `.env.example`. Nothing reads
 `process.env` directly; access is centralized in `src/lib/env.ts`. Most integrations
@@ -55,8 +61,9 @@ integrations, so it deploys to Vercel (or any Node host), not to static hosting.
    At minimum: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `NEXT_PUBLIC_SITE_URL`.
    Add Stripe / R2 / S3 / Anthropic / Resend / Upstash / YouTube keys to enable those
    features.
-4. Run `prisma migrate deploy` against the production database (locally with the prod
-   `DATABASE_URL`, or as a deploy step) before the first launch.
+4. Prepare the production database before the first launch (locally, pointing at the
+   prod `DATABASE_URL`): `npx prisma db push`, then apply
+   `prisma/sql/search-indexes.sql`, then `npx prisma db seed`.
 
 ### Static landing (GitHub Pages)
 
