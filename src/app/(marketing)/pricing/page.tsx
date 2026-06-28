@@ -80,7 +80,7 @@ export default async function PricingPage() {
   const currentTier = session?.user?.membershipTier ?? null;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-20 md:px-10">
+    <div className="mx-auto w-full max-w-[1600px] px-6 py-20 md:px-10">
       <div className="max-w-2xl">
         <span className="mono-label">Membership</span>
         <h1 className="mt-3 text-balance text-3xl font-semibold tracking-tight md:text-5xl">

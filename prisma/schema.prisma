@@ -684,3 +684,33 @@ model Review {
   @@unique([userId, productId])
   @@index([productId])
 }
+
+// ===========================================================================
+// Editable homepage content (admin-managed, no object storage required —
+// media is referenced by URL so it works without R2/S3 credentials)
+// ===========================================================================
+
+// Generic key/value site settings (e.g. the homepage hero video). Keyed by a
+// stable string so the admin form can upsert without a fixed column per setting.
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+// Slides for the full-width homepage hero carousel. Admin-controlled order and
+// visibility; the storefront falls back to built-in defaults when none exist.
+model HomeSlide {
+  id        String   @id @default(cuid())
+  title     String
+  subtitle  String?
+  imageUrl  String
+  ctaLabel  String?
+  ctaHref   String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, sortOrder])
+}

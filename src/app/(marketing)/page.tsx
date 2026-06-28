@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Configurator } from "@/components/configurator/configurator";
 import { ConciergeEntry } from "@/components/concierge/concierge-entry";
 import { ProductCard } from "@/components/storefront/product-card";
+import { CourseCard } from "@/components/courses/course-card";
+import { HeroCarousel } from "@/components/marketing/hero-carousel";
+import { HomeVideoSeparator } from "@/components/marketing/home-video-separator";
 import { BeforeAfterSlider } from "@/components/marketing/before-after-slider";
 import { PRODUCT_TYPE_LABELS } from "@/lib/format";
 import {
@@ -11,6 +14,8 @@ import {
   browseProducts,
   listPublishedCategories,
 } from "@/lib/products/storefront-queries";
+import { listPublishedCourses } from "@/lib/courses/queries";
+import { getHomeSlides, getHomeVideo } from "@/lib/homepage/queries";
 
 export const revalidate = 300;
 
@@ -55,62 +60,46 @@ const FAMILIES: {
 ];
 
 export default async function LandingPage() {
-  const [featured, categories, courses, typeFacets] = await Promise.all([
-    browseProducts({ pageSize: 3 }),
-    listPublishedCategories(),
-    browseProducts({ type: "COURSE", pageSize: 3 }),
-    browseFacets({}),
-  ]);
+  const [featured, categories, courses, typeFacets, slides, video] =
+    await Promise.all([
+      browseProducts({ pageSize: 3 }),
+      listPublishedCategories(),
+      listPublishedCourses(),
+      browseFacets({}),
+      getHomeSlides(),
+      getHomeVideo(),
+    ]);
   const countByType = new Map(typeFacets.types.map((f) => [f.type, f.count]));
+  const featuredCourses = courses.slice(0, 3);
 
   return (
     <div className="flex flex-col">
-      {/* Hero: render on the left, the words on the right for readability. */}
-      <section className="relative overflow-hidden border-b border-border">
-        <div className="bp-grid pointer-events-none absolute inset-0 opacity-40" />
-        <div className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-6 py-16 md:grid-cols-2 md:px-10 md:py-24">
-          {/* Render, framed like an instrument readout. */}
-          <div className="bp-ticks order-2 border border-border bg-card/40 p-3 md:order-1 md:p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="mono-label">Render / procedural_env_07</span>
-              <span className="mono-label text-primary/70">SHIPPED</span>
-            </div>
-            <div className="relative aspect-square w-full overflow-hidden border border-border">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/mockups/procedural-environments-101.jpg"
-                alt="A procedural ruined environment shown with its node graph and parameter controls"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Copy + calls to action. */}
-          <div className="order-1 md:order-2">
-            <h1 className="text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
-              Start with clay.{" "}
-              <span className="text-primary">Ship a world.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Pull a procedural building block off the shelf, reshape it live,
-              and ship something unmistakably yours. Engine-ready in minutes,
-              not weeks.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link href="/browse">Browse the catalog</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/pricing">See membership</Link>
-              </Button>
-            </div>
-          </div>
+      {/* Hero: full-width service carousel behind the headline. */}
+      <HeroCarousel slides={slides}>
+        <span className="mono-label text-primary/80">
+          Procedural worlds, forged to be yours
+        </span>
+        <h1 className="mt-4 text-balance text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
+          Start with clay.{" "}
+          <span className="text-primary">Ship a world.</span>
+        </h1>
+        <p className="mt-5 max-w-xl text-lg text-muted-foreground">
+          Pull a procedural building block off the shelf, reshape it live, and
+          ship something unmistakably yours. Engine-ready in minutes, not weeks.
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button asChild size="lg">
+            <Link href="/browse">Browse the catalog</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/pricing">See membership</Link>
+          </Button>
         </div>
-      </section>
+      </HeroCarousel>
 
       {/* Live configurator, framed and explained so it reads clearly. */}
       <section className="border-b border-border bg-card/20">
-        <div className="mx-auto w-full max-w-6xl px-6 py-16 md:px-10">
+        <div className="mx-auto w-full max-w-[1600px] px-6 py-16 md:px-10">
           <div className="max-w-2xl">
             <span className="mono-label">Live demo</span>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
@@ -153,7 +142,7 @@ export default async function LandingPage() {
 
       {/* Catalog families, the visual index. */}
       <section className="border-b border-border">
-        <div className="mx-auto w-full max-w-6xl px-6 py-20 md:px-10">
+        <div className="mx-auto w-full max-w-[1600px] px-6 py-20 md:px-10">
           <span className="mono-label">Catalog families</span>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
             Everything a scene needs, in one catalog
@@ -167,7 +156,7 @@ export default async function LandingPage() {
               <Link
                 key={f.type}
                 href={`/browse?type=${f.type}`}
-                className="group relative flex min-h-[240px] flex-col justify-end overflow-hidden bg-background p-6"
+                className="group relative flex min-h-[280px] flex-col justify-end overflow-hidden bg-background p-6"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -197,18 +186,16 @@ export default async function LandingPage() {
 
       {/* Clay to shipped, the before/after wipe. */}
       <section className="border-b border-border bg-card/20">
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-6 py-20 md:grid-cols-2 md:px-10">
+        <div className="mx-auto grid w-full max-w-[1600px] items-center gap-10 px-6 py-20 md:grid-cols-2 md:px-10">
           <div>
-            <span className="mono-label">{"// from clay to shipped"}</span>
+            <span className="mono-label">{"// drag to compare"}</span>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
-              Building from scratch is slow. Stock assets look like
-              everyone&apos;s.
+              Drag the handle. Watch clay become a shipped scene.
             </h2>
             <p className="mt-4 text-muted-foreground">
               Clay starts you at the blueprint, a procedural asset with every
               parameter exposed, then lets you reshape it into something that is
-              unmistakably your scene. Drag the handle to go from clay to
-              shipped.
+              unmistakably your scene.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button asChild>
@@ -242,10 +229,13 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      {/* Video separator above the featured courses (admin-managed). */}
+      <HomeVideoSeparator video={video} />
+
       {/* Featured courses */}
-      {courses.items.length > 0 ? (
+      {featuredCourses.length > 0 ? (
         <section className="border-b border-border">
-          <div className="mx-auto w-full max-w-6xl px-6 py-20 md:px-10">
+          <div className="mx-auto w-full max-w-[1600px] px-6 py-20 md:px-10">
             <div className="flex items-end justify-between">
               <div>
                 <span className="mono-label">Learn the workflow</span>
@@ -260,9 +250,9 @@ export default async function LandingPage() {
                 All courses →
               </Link>
             </div>
-            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {courses.items.map((p) => (
-                <ProductCard key={p.id} product={p} />
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredCourses.map((c) => (
+                <CourseCard key={c.id} course={c} />
               ))}
             </div>
           </div>
@@ -271,7 +261,7 @@ export default async function LandingPage() {
 
       {/* Category rails */}
       {categories.length > 0 ? (
-        <section className="mx-auto w-full max-w-6xl px-6 py-20 md:px-10">
+        <section className="mx-auto w-full max-w-[1600px] px-6 py-20 md:px-10">
           <span className="mono-label">Index</span>
           <h2 className="mt-3 text-2xl font-semibold tracking-tight">
             Browse by theme
@@ -295,7 +285,7 @@ export default async function LandingPage() {
 
       {/* Featured rail */}
       {featured.items.length > 0 ? (
-        <section className="mx-auto w-full max-w-6xl px-6 pb-24 md:px-10">
+        <section className="mx-auto w-full max-w-[1600px] px-6 pb-24 md:px-10">
           <div className="flex items-end justify-between">
             <div>
               <span className="mono-label">Latest units</span>
@@ -310,7 +300,7 @@ export default async function LandingPage() {
               View all →
             </Link>
           </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featured.items.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}

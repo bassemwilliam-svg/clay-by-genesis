@@ -49,3 +49,10 @@ export const PRODUCT_TYPE_LABELS: Record<string, string> = {
   COURSE: "Course",
   BUNDLE: "Bundle",
 };
+
+export const COURSE_LEVEL_LABELS: Record<string, string> = {
+  BEGINNER: "Beginner",
+  INTERMEDIATE: "Intermediate",
+  ADVANCED: "Advanced",
+  ALL_LEVELS: "All levels",
+};

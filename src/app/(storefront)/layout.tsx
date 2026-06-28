@@ -59,7 +59,7 @@ export default function StorefrontLayout({
       <main className="flex-1">{children}</main>
 
       <footer className="mt-auto border-t border-border">
-        <div className="mx-auto w-full max-w-6xl px-6 py-12 md:px-10">
+        <div className="mx-auto w-full max-w-[1600px] px-6 py-12 md:px-10">
           <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <span className="flex items-baseline gap-2.5">

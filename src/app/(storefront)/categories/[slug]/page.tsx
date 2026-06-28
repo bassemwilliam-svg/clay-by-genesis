@@ -26,7 +26,7 @@ export default async function CategoryPage({
   const result = await browseProducts({ categorySlug: slug, pageSize: 48 });
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:px-10">
+    <section className="mx-auto max-w-[1600px] px-6 py-12 md:px-10">
       <nav className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
         <Link href="/browse" className="transition-colors hover:text-foreground">
           BROWSE

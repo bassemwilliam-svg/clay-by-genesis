@@ -88,7 +88,7 @@ export default async function ProductDetailPage({
       : null;
 
   return (
-    <article className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+    <article className="mx-auto max-w-[1600px] px-6 py-10 md:px-10">
       {/* Breadcrumb / coordinate trail. */}
       <nav className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
         <Link href="/browse" className="transition-colors hover:text-foreground">

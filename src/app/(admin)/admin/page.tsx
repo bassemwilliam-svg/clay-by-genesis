@@ -29,6 +29,16 @@ export default function AdminHomePage() {
             graded quizzes that gate progress.
           </p>
         </Link>
+        <Link
+          href="/admin/homepage"
+          className="rounded-lg border border-border p-5 transition hover:border-ring hover:bg-muted/20"
+        >
+          <h2 className="font-semibold">Homepage</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Edit the marketing homepage: hero carousel slides and the
+            full-width video separator.
+          </p>
+        </Link>
       </div>
     </section>
   );

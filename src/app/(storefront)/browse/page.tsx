@@ -161,7 +161,7 @@ export default async function BrowsePage({
   );
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:px-10">
+    <section className="mx-auto max-w-[1600px] px-6 py-12 md:px-10">
       <span className="mono-label">Catalog index</span>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">
         Browse the catalog

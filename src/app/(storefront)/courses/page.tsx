@@ -64,7 +64,7 @@ export default async function CoursesPage({
   const filtersActive = Boolean(level || software);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-12 md:px-10">
+    <section className="mx-auto max-w-[1600px] px-6 py-12 md:px-10">
       {/* Hero */}
       <div className="border border-border bg-card/40 p-6 md:p-10">
         <span className="mono-label">Clay Academy</span>

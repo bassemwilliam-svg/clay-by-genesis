@@ -55,6 +55,9 @@ export async function listPublishedCourses(filters: CourseFilters = {}) {
       course: {
         select: {
           summary: true,
+          level: true,
+          estimatedTime: true,
+          software: true,
           chapters: {
             select: {
               _count: { select: { quizzes: true } },
@@ -65,6 +68,24 @@ export async function listPublishedCourses(filters: CourseFilters = {}) {
       },
     },
   });
+
+  // Rating summary per course (average + count), one grouped query for the set.
+  const ids = rows.map((r) => r.id);
+  const ratingRows =
+    ids.length > 0
+      ? await prisma.review.groupBy({
+          by: ["productId"],
+          where: { productId: { in: ids } },
+          _avg: { rating: true },
+          _count: { _all: true },
+        })
+      : [];
+  const ratingByProduct = new Map(
+    ratingRows.map((r) => [
+      r.productId,
+      { average: r._avg.rating ?? 0, count: r._count._all },
+    ]),
+  );
 
   return rows.map((p) => {
     const chapters = p.course?.chapters ?? [];
@@ -78,7 +99,14 @@ export async function listPublishedCourses(filters: CourseFilters = {}) {
         0,
       ),
     };
-    return { ...p, stats };
+    return {
+      ...p,
+      stats,
+      level: p.course?.level ?? null,
+      estimatedTime: p.course?.estimatedTime ?? null,
+      software: p.course?.software ?? [],
+      rating: ratingByProduct.get(p.id) ?? { average: 0, count: 0 },
+    };
   });
 }
 

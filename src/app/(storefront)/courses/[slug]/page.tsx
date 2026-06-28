@@ -83,7 +83,7 @@ export default async function CourseDetailPage({
   let lessonNo = 0;
 
   return (
-    <article className="mx-auto max-w-6xl px-6 py-10 md:px-10">
+    <article className="mx-auto max-w-[1600px] px-6 py-10 md:px-10">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
         <Link href="/courses" className="transition-colors hover:text-foreground">

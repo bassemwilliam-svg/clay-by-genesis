@@ -50,7 +50,7 @@ export default function MarketingLayout({
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-8 sm:flex-row sm:items-center sm:justify-between md:px-10">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-2 px-6 py-8 sm:flex-row sm:items-center sm:justify-between md:px-10">
           <span className="text-sm text-muted-foreground">
             Start with clay. Ship a world.
           </span>

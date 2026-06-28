@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { formatMoney } from "@/lib/format";
+import { COURSE_LEVEL_LABELS, formatMoney } from "@/lib/format";
 import { formatRuntime } from "@/lib/video/youtube";
 import { SchematicArt } from "@/components/storefront/schematic-art";
+import { StarRating } from "@/components/storefront/star-rating";
 import { hashSeed } from "@/lib/schematic";
 import type { CourseCardData } from "@/lib/courses/queries";
 
@@ -15,6 +16,16 @@ export function CourseCard({ course }: { course: CourseCardData }) {
   const onSale =
     course.discountCents != null && course.discountCents < course.priceCents;
   const free = course.priceCents === 0;
+
+  // "Duration" prefers the authored human label, else the summed video runtime.
+  const duration =
+    course.estimatedTime?.trim() ||
+    (course.stats.totalSeconds > 0
+      ? formatRuntime(course.stats.totalSeconds)
+      : null);
+  const levelLabel = course.level ? COURSE_LEVEL_LABELS[course.level] : null;
+  const software = course.software.slice(0, 3);
+  const hasRating = course.rating.count > 0;
 
   return (
     <Link
@@ -41,6 +52,11 @@ export function CourseCard({ course }: { course: CourseCardData }) {
         <span className="mono-label absolute left-3 top-3 border border-border bg-background/70 px-2 py-1 backdrop-blur">
           Course
         </span>
+        {levelLabel ? (
+          <span className="absolute left-3 top-10 rounded-sm border border-primary/40 bg-background/70 px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-widest text-primary/90 backdrop-blur">
+            {levelLabel}
+          </span>
+        ) : null}
         <span className="absolute right-3 top-3 font-mono text-[0.625rem] tracking-widest text-primary/80">
           {partCode(course.slug)}
         </span>
@@ -55,6 +71,28 @@ export function CourseCard({ course }: { course: CourseCardData }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-2 border-t border-border p-4">
+        {/* Review stars (replaces the plain "units" readout). */}
+        <div className="flex items-center gap-2">
+          {hasRating ? (
+            <>
+              <StarRating value={course.rating.average} size={14} />
+              <span className="font-mono text-xs text-muted-foreground">
+                {course.rating.average.toFixed(1)}
+                <span className="text-border"> · </span>
+                {course.rating.count}{" "}
+                {course.rating.count === 1 ? "review" : "reviews"}
+              </span>
+            </>
+          ) : (
+            <>
+              <StarRating value={0} size={14} />
+              <span className="font-mono text-xs text-muted-foreground">
+                New course
+              </span>
+            </>
+          )}
+        </div>
+
         <h3 className="text-balance font-medium leading-tight tracking-tight transition-colors group-hover:text-primary">
           {course.title}
         </h3>
@@ -64,17 +102,36 @@ export function CourseCard({ course }: { course: CourseCardData }) {
           </p>
         ) : null}
 
+        {/* Curriculum + duration + level. */}
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[0.6875rem] text-muted-foreground">
-          <span>{course.stats.chapterCount} chapters</span>
-          <span className="text-border">·</span>
           <span>{course.stats.lessonCount} lessons</span>
-          {course.stats.totalSeconds > 0 ? (
+          {duration ? (
             <>
               <span className="text-border">·</span>
-              <span>{formatRuntime(course.stats.totalSeconds)}</span>
+              <span>{duration}</span>
+            </>
+          ) : null}
+          {levelLabel ? (
+            <>
+              <span className="text-border">·</span>
+              <span>{levelLabel}</span>
             </>
           ) : null}
         </div>
+
+        {/* Software used. */}
+        {software.length > 0 ? (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {software.map((s) => (
+              <span
+                key={s}
+                className="rounded-sm border border-border px-1.5 py-0.5 font-mono text-[0.625rem] text-muted-foreground"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        ) : null}
 
         <div className="mt-auto flex items-baseline gap-2 border-t border-dashed border-border/70 pt-3 font-mono">
           <span className="mono-label not-italic">ENROLL</span>
